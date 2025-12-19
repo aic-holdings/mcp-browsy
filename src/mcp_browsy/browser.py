@@ -311,12 +311,12 @@ class BrowserManager:
         """Open a new tab."""
         client = await self._get_http_client()
 
-        # Create new target
+        # Create new target via PUT request
         create_url = f"http://localhost:{self.port}/json/new"
         if url:
             create_url += f"?{url}"
 
-        response = await client.get(create_url)
+        response = await client.put(create_url)
         response.raise_for_status()
         target = response.json()
 

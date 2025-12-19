@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 # Create MCP server
 mcp = FastMCP(
     "mcp-browsy",
-    description="World-class browser automation MCP using direct CDP",
+    instructions="World-class browser automation MCP using direct CDP. No extension required.",
 )
 
 

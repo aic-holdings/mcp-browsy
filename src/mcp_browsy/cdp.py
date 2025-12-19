@@ -17,6 +17,7 @@ from collections.abc import Awaitable
 
 import websockets
 from websockets.exceptions import ConnectionClosed
+from websockets.protocol import State
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +53,7 @@ class CDPClient:
     @property
     def connected(self) -> bool:
         """Check if connected to browser."""
-        return self._connected and self.ws is not None and not self.ws.closed
+        return self._connected and self.ws is not None and self.ws.state == State.OPEN
 
     async def connect(self, ws_url: str) -> None:
         """Connect to the browser via WebSocket."""
