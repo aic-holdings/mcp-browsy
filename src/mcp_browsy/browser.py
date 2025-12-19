@@ -114,11 +114,13 @@ class BrowserManager:
     - Hybrid mode (try connect, then launch)
     """
 
-    def __init__(self, port: int = 9222):
+    def __init__(self, host: str = "localhost", port: int = 9222):
+        self.host = host
         self.port = port
         self.process: Optional[subprocess.Popen] = None
         self.browser: Optional[Browser] = None
         self._http_client: Optional[httpx.AsyncClient] = None
+        self._is_remote = host != "localhost" and host != "127.0.0.1"
 
     async def _get_http_client(self) -> httpx.AsyncClient:
         """Get or create async HTTP client."""
@@ -130,7 +132,7 @@ class BrowserManager:
         """Get list of available CDP targets."""
         client = await self._get_http_client()
         try:
-            response = await client.get(f"http://localhost:{self.port}/json/list")
+            response = await client.get(f"http://{self.host}:{self.port}/json/list")
             response.raise_for_status()
             return response.json()
         except Exception as e:

@@ -15,6 +15,7 @@ from fastmcp import FastMCP
 
 from .browser import browser_manager
 from .tools import navigation, input, inspection
+from .hq_client import get_hq_client, is_hq_mode
 
 # Configure logging
 logging.basicConfig(
@@ -45,16 +46,28 @@ async def browsy_launch(headless: bool = False) -> str:
     Args:
         headless: Run in headless mode (no visible window)
     """
-    await browser_manager.launch(headless=headless)
-    browser = browser_manager.browser
-    return f"Browser launched. Current page: {await browser.get_url()}"
+    hq = get_hq_client()
+    if hq:
+        # HQ mode: create browser via browsy-hq
+        session_id = await hq.create_browser(headless=headless)
+        return f"Browser launched via browsy-hq. Session: {session_id}"
+    else:
+        # Local mode: launch Chrome directly
+        await browser_manager.launch(headless=headless)
+        browser = browser_manager.browser
+        return f"Browser launched. Current page: {await browser.get_url()}"
 
 
 @mcp.tool()
 async def browsy_close() -> str:
     """Close the browser and cleanup."""
-    await browser_manager.close()
-    return "Browser closed"
+    hq = get_hq_client()
+    if hq:
+        await hq.close_browser()
+        return "Browser closed (via browsy-hq)"
+    else:
+        await browser_manager.close()
+        return "Browser closed"
 
 
 # =============================================================================
@@ -70,7 +83,13 @@ async def browsy_navigate(url: str, wait_until: str = "load") -> dict:
         url: The URL to navigate to
         wait_until: Wait condition - "load" or "domcontentloaded"
     """
-    return await navigation.navigate(url, wait_until)
+    hq = get_hq_client()
+    if hq:
+        if not hq.session_id:
+            await hq.create_browser()
+        return await hq.navigate(url)
+    else:
+        return await navigation.navigate(url, wait_until)
 
 
 @mcp.tool()
@@ -258,7 +277,11 @@ async def browsy_snapshot(include_hidden: bool = False) -> dict:
     Args:
         include_hidden: Include hidden elements
     """
-    return await inspection.snapshot(include_hidden)
+    hq = get_hq_client()
+    if hq and hq.session_id:
+        return await hq.snapshot()
+    else:
+        return await inspection.snapshot(include_hidden)
 
 
 @mcp.tool()
@@ -275,7 +298,11 @@ async def browsy_screenshot(
         full_page: Capture entire scrollable page
         format: Image format - "png", "jpeg", "webp"
     """
-    return await inspection.screenshot(selector=selector, full_page=full_page, format=format)
+    hq = get_hq_client()
+    if hq and hq.session_id:
+        return await hq.screenshot()
+    else:
+        return await inspection.screenshot(selector=selector, full_page=full_page, format=format)
 
 
 @mcp.tool()
